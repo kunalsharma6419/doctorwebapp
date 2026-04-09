@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ConsultationStatus {
+  DRAFT
+  COMPLETED
+}
+
+model Doctor {
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  phone           String?
+  passwordHash    String
+  specialization  String?
+  consultations   Consultation[]
+  prescriptions   Prescription[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Patient {
+  id                 String         @id @default(cuid())
+  patientCode        String         @unique
+  fullName           String
+  dateOfBirth        DateTime?
+  age                Int?
+  gender             Gender
+  phone              String?
+  country            String?
+  state              String?
+  city               String?
+  address            String?
+  bloodGroup         String?
+  allergies          String?
+  chronicConditions  String?
+  notes              String?
+  consultations      Consultation[]
+  prescriptions      Prescription[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+model Consultation {
+  id                 String               @id @default(cuid())
+  patientId          String
+  doctorId           String
+  visitDate          DateTime             @default(now())
+  chiefComplaint     String
+  symptoms           String?
+  examinationNotes   String?
+  diagnosis          String?
+  treatmentPlan      String?
+  doctorNotes        String?
+  followUpDate       DateTime?
+  status             ConsultationStatus   @default(DRAFT)
+  patient            Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor             Doctor               @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  vitals             ConsultationVitals?
+  prescription       Prescription?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([patientId, visitDate])
+  @@index([doctorId, visitDate])
+}
+
+model ConsultationVitals {
+  id                       String         @id @default(cuid())
+  consultationId           String         @unique
+  temperature              Float?
+  bloodPressureSystolic    Int?
+  bloodPressureDiastolic   Int?
+  pulseRate                Int?
+  respiratoryRate          Int?
+  oxygenSaturation         Int?
+  height                   Float?
+  weight                   Float?
+  bmi                      Float?
+  consultation             Consultation   @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+}
+
+model Prescription {
+  id               String              @id @default(cuid())
+  consultationId   String              @unique
+  patientId        String
+  doctorId         String
+  notes            String?
+  consultation     Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient          Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor           Doctor              @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  items            PrescriptionItem[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+model PrescriptionItem {
+  id             String         @id @default(cuid())
+  prescriptionId String
+  medicineName   String
+  dosage         String?
+  frequency      String?
+  duration       String?
+  instructions   String?
+  quantity       Int?
+  prescription   Prescription   @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
